@@ -4,15 +4,17 @@ import Box from '../src/Componentes/Box/index'
 import {AlurakutMenu, AlurakutProfileSidebarMenuDefault, OrkutNostalgicIconSet} from '../src/lib/AluraCommons'
 import {ProfileRelationsBoxWrapper} from '../src/Componentes/ProfileRelations/index'
 import {useState, useEffect} from 'react'
+import nookies from 'nookies';
+import jwt from 'jsonwebtoken';
 
 function ProfileSidebar(propriedade) {
   return (
     <Box as="aside">
-        <img src={`https://github.com/${propriedade.GitHubUser}.png`} style={{borderRadius: '8px'}}></img>    
+        <img src={`https://github.com/${propriedade.githubUser}.png`} style={{borderRadius: '8px'}}></img>    
         <hr/>
         <p>
-          <a className="boxLink" href={`https://github.com/${propriedade.GitHubUser}`}>
-            @{propriedade.GitHubUser}
+          <a className="boxLink" href={`https://github.com/${propriedade.githubUser}`}>
+            @{propriedade.githubUser}
           </a> 
         </p>
         
@@ -45,10 +47,10 @@ function ProfileRelationsBox(propriedades) {
   )
 }
 
-export default function Home() {
-  const usuarioAleatorio = "ricardobarcelosdonascimento";
+export default function Home(props) {
+  const usuarioAleatorio = props.githubUser;
 const [Comunidades, setComunidades] = useState([]);
-const GitHubUser = "omariosouto";
+//const GitHubUser = props.GitHubUser;
 const PessoasFavoritas = [
   "juunegreiros",
   "omariosouto",
@@ -106,7 +108,7 @@ const PessoasFavoritas = [
     <AlurakutMenu />
     <MainGrid>
     <div className="profileArea" style={{gridArea: 'profileArea'}}>
-      <ProfileSidebar GitHubUser={GitHubUser}/>
+    <ProfileSidebar githubUser={usuarioAleatorio} />
     </div>
     <div className="welcomeArea" style={{gridArea: 'welcomeArea'}}>
       <Box>
@@ -207,3 +209,30 @@ const PessoasFavoritas = [
   </>
   );
 }
+
+export async function getServerSideProps(context) {
+  const cookies = nookies.get(context)
+  const token = cookies.USER_TOKEN;
+  const { isAuthenticated } = await fetch('https://alurakut.vercel.app/api/auth', {
+    headers: {
+        Authorization: token
+      }
+  })
+  .then((resposta) => resposta.json())
+
+  if(!isAuthenticated) {
+    return {
+      redirect: {
+        destination: '/login',
+        permanent: false,
+      }
+    }
+  }
+
+  const { githubUser } = jwt.decode(token);
+  return {
+    props: {
+      githubUser
+    }, // will be passed to the page component as props
+  }
+} 
